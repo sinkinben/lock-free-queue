@@ -2,14 +2,25 @@
 #include <atomic>
 #include <vector>
 #include <cassert>
-template <class T> class spsc_queue
-{
-  private:
-    std::vector<T> m_buffer;
-    std::atomic<size_t> m_head;
-    std::atomic<size_t> m_tail;
 
-  public:
+#ifdef __cpp_lib_hardware_interference_size
+using std::hardware_constructive_interference_size;
+using std::hardware_destructive_interference_size;
+#else
+// 64 bytes on x86-64 │ L1_CACHE_BYTES │ L1_CACHE_SHIFT │ __cacheline_aligned │ ...
+constexpr std::size_t hardware_constructive_interference_size = 64;
+constexpr std::size_t hardware_destructive_interference_size = 64;
+#endif
+
+template <class T>
+class spsc_queue
+{
+private:
+    std::vector<T> m_buffer;
+    alignas(hardware_constructive_interference_size) std::atomic<size_t> m_head;
+    alignas(hardware_constructive_interference_size) std::atomic<size_t> m_tail;
+
+public:
     spsc_queue(size_t capacity) : m_buffer(capacity + 1), m_head(0), m_tail(0)
     {
     }
@@ -30,7 +41,7 @@ template <class T> class spsc_queue
     inline bool dequeue(T &item)
     {
         const size_t head = m_head.load(std::memory_order_relaxed);
-        
+
         if (head == m_tail.load(std::memory_order_acquire))
             return false;
 

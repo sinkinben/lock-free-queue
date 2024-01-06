@@ -96,8 +96,8 @@ void run_benchmark(int cpu_consumer, int cpu_producer, int iterations)
 
 int main()
 {
-    constexpr int cpu1 = 0;
-    constexpr int cpu2 = 1;
+    constexpr int cpu1 = 1;
+    constexpr int cpu2 = 3;
     constexpr int iterations = 10;
 
     run_benchmark(cpu1, cpu2, iterations);
