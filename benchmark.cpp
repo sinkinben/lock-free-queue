@@ -47,7 +47,7 @@ void print_metrics(std::vector<int64_t> &res)
 void run_benchmark(int cpu_consumer, int cpu_producer, int iterations)
 {
     std::vector<int64_t> res(iterations, 0);
-    constexpr int capacity = int(1e5);
+    constexpr int capacity = int(1 << 16);
     constexpr int elements = int(1e8);
     for (int iter = 0; iter < iterations; ++iter)
     {
