@@ -20,8 +20,11 @@ private:
     alignas(hardware_constructive_interference_size) std::atomic<size_t> m_head;
     alignas(hardware_constructive_interference_size) std::atomic<size_t> m_tail;
 
+    alignas(hardware_constructive_interference_size) size_t cached_head;
+    alignas(hardware_constructive_interference_size) size_t cached_tail;
+
 public:
-    spsc_queue(size_t capacity) : m_buffer(capacity + 1), m_head(0), m_tail(0)
+    spsc_queue(size_t capacity) : m_buffer(capacity + 1), m_head(0), m_tail(0), cached_head(0), cached_tail(0)
     {
     }
 
@@ -30,8 +33,12 @@ public:
         const size_t tail = m_tail.load(std::memory_order_relaxed);
         const size_t next = (tail + 1) % m_buffer.size();
 
-        if (next == m_head.load(std::memory_order_acquire))
-            return false;
+        if (next == cached_head)
+        {
+            cached_head = m_head.load(std::memory_order_acquire);
+            if (next == cached_head)
+                return false;
+        }
 
         m_buffer[tail] = item;
         m_tail.store(next, std::memory_order_release);
@@ -42,8 +49,12 @@ public:
     {
         const size_t head = m_head.load(std::memory_order_relaxed);
 
-        if (head == m_tail.load(std::memory_order_acquire))
-            return false;
+        if (head == cached_tail)
+        {
+            cached_tail = m_tail.load(std::memory_order_acquire);
+            if (head == cached_tail)
+                return false;
+        }
 
         item = m_buffer[head];
         const size_t next = (head + 1) % m_buffer.size();
